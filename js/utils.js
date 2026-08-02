@@ -80,8 +80,10 @@ const Utils = {
 
         toast.innerHTML = `
             <div class="toast-icon"><i class="${icons[type] || icons.info}"></i></div>
-            <div class="toast-body"><p>${message}</p></div>
+            <div class="toast-body"><p></p></div>
         `;
+        // Message may embed a user-entered subject name — always textContent, never innerHTML.
+        toast.querySelector('.toast-body p').textContent = message;
 
         container.appendChild(toast);
 
@@ -114,6 +116,9 @@ const Utils = {
     // Calculate needed classes
     calculateNeeded: (attended, total, target) => {
         if (target <= 0) return 0;
+        // At a 100% target, one missed class ever makes it mathematically
+        // unreachable again — the (100-target) divisor below would be 0.
+        if (target >= 100) return attended >= total ? 0 : Infinity;
         const needed = Math.ceil((target * total - 100 * attended) / (100 - target));
         return Math.max(0, needed);
     },
@@ -134,6 +139,20 @@ const Utils = {
             return 'Subject name must be less than 50 characters';
         }
         return null;
+    },
+
+    // Escape text before dropping it into innerHTML — subject names come
+    // from user input (and imported JSON files), so they're never trusted.
+    escapeHtml: (str) => {
+        const div = document.createElement('div');
+        div.textContent = str === undefined || str === null ? '' : String(str);
+        return div.innerHTML;
+    },
+
+    // Only allow real hex colors through to style="background:..." strings
+    // (subject.color can come from an imported JSON file, so it's untrusted).
+    sanitizeColor: (color, fallback = '#4f46e5') => {
+        return /^#[0-9a-fA-F]{3,8}$/.test(color) ? color : fallback;
     },
 
     // Get random color

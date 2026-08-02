@@ -1,3 +1,23 @@
+// How each status contributes to a subject's attended/total counters.
+// null (no entry yet) contributes nothing, same as 'cancelled'.
+const STATUS_CONTRIB = {
+    attended:  { attended: 1, total: 1 },
+    missed:    { attended: 0, total: 1 },
+    cancelled: { attended: 0, total: 0 }
+};
+
+function statusContrib(status) {
+    return STATUS_CONTRIB[status] || { attended: 0, total: 0 };
+}
+
+// Moves a subject's counters from oldStatus's contribution to newStatus's.
+function applyStatusDelta(subject, oldStatus, newStatus) {
+    const oldC = statusContrib(oldStatus);
+    const newC = statusContrib(newStatus);
+    subject.attended = Math.max(0, subject.attended + (newC.attended - oldC.attended));
+    subject.total    = Math.max(0, subject.total    + (newC.total    - oldC.total));
+}
+
 // LocalStorage Management
 const Storage = {
     // Keys
@@ -166,107 +186,91 @@ const Storage = {
         return history.find(entry => entry.date === date) || { date, entries: [] };
     },
 
+    // Returns { success, changed, prevStatus } — prevStatus is null when this
+    // subject had no entry yet for this date. Callers use prevStatus to build
+    // an accurate undo record (see revertAttendance).
     markAttendance: (date, subjectId, status) => {
         const history = Storage.getHistory();
         let dateEntry = history.find(entry => entry.date === date);
-        
+
         if (!dateEntry) {
             dateEntry = { date, entries: [] };
             history.push(dateEntry);
         }
 
-        // Find existing entry for this subject on this date
         const existingEntry = dateEntry.entries.find(entry => entry.subjectId === subjectId);
         const subjects = Storage.getSubjects();
         const subjectIndex = subjects.findIndex(s => s.id === subjectId);
-        
+
         if (subjectIndex === -1) {
             console.error('Subject not found:', subjectId);
-            return false;
+            return { success: false };
         }
-        
+
         const subject = subjects[subjectIndex];
-        
+        const prevStatus = existingEntry ? existingEntry.status : null;
+
+        if (existingEntry && existingEntry.status === status) {
+            return { success: true, changed: false, prevStatus };
+        }
+
+        applyStatusDelta(subject, prevStatus, status);
+
         if (existingEntry) {
-            // Update existing entry - only change status, don't increment totals
-            if (existingEntry.status !== status) {
-                // Adjust totals based on status change
-                if (existingEntry.status === 'attended' && status !== 'attended') {
-                    // Was attended, now not attended
-                    subject.attended = Math.max(0, subject.attended - 1);
-                } else if (existingEntry.status !== 'attended' && status === 'attended') {
-                    // Was not attended, now attended
-                    subject.attended += 1;
-                }
-                // For missed/cancelled, total doesn't change when updating
-                
-                existingEntry.status = status;
-                existingEntry.timestamp = new Date().toISOString();
-            }
+            existingEntry.status = status;
+            existingEntry.timestamp = new Date().toISOString();
         } else {
-            // New entry - add to totals
-            if (status === 'attended') {
-                subject.attended += 1;
-                subject.total += 1;
-            } else if (status === 'missed') {
-                subject.total += 1;
-            }
-            // cancelled doesn't affect totals
-            
             dateEntry.entries.push({
                 subjectId,
                 status,
                 timestamp: new Date().toISOString()
             });
         }
-        
-        // Save updated data
+
         subjects[subjectIndex] = subject;
         Storage.saveSubjects(subjects);
         Storage.saveHistory(history);
-        
-        return true;
+
+        return { success: true, changed: true, prevStatus };
     },
 
-    undoLastAction: () => {
+    // Reverts one specific subject/date entry back to prevStatus (or removes
+    // it entirely if prevStatus is null, i.e. it didn't exist before).
+    // Driven by the caller's own action record rather than guessing which
+    // history entry was "last", so re-marks (tap to cancel after a swipe,
+    // etc.) always undo the right thing.
+    revertAttendance: (date, subjectId, prevStatus) => {
         const history = Storage.getHistory();
-        if (history.length === 0) return null;
+        const dateIndex = history.findIndex(entry => entry.date === date);
+        if (dateIndex === -1) return false;
 
-        const lastDateEntry = history[history.length - 1];
-        if (lastDateEntry.entries.length === 0) {
-            history.pop();
-            Storage.saveHistory(history);
-            return null;
-        }
+        const dateEntry = history[dateIndex];
+        const entryIndex = dateEntry.entries.findIndex(e => e.subjectId === subjectId);
+        if (entryIndex === -1) return false;
 
-        const lastAction = lastDateEntry.entries[lastDateEntry.entries.length - 1];
+        const entry = dateEntry.entries[entryIndex];
         const subjects = Storage.getSubjects();
-        const subjectIndex = subjects.findIndex(s => s.id === lastAction.subjectId);
-        
+        const subjectIndex = subjects.findIndex(s => s.id === subjectId);
+
         if (subjectIndex !== -1) {
             const subject = subjects[subjectIndex];
-            
-            // Revert totals based on the action being undone
-            if (lastAction.status === 'attended') {
-                subject.attended = Math.max(0, subject.attended - 1);
-                subject.total = Math.max(0, subject.total - 1);
-            } else if (lastAction.status === 'missed') {
-                subject.total = Math.max(0, subject.total - 1);
-            }
-            // cancelled doesn't affect totals
-            
+            applyStatusDelta(subject, entry.status, prevStatus);
             subjects[subjectIndex] = subject;
             Storage.saveSubjects(subjects);
         }
-        
-        // Remove the entry
-        lastDateEntry.entries.pop();
-        if (lastDateEntry.entries.length === 0) {
-            history.pop();
+
+        if (prevStatus === null) {
+            dateEntry.entries.splice(entryIndex, 1);
+            if (dateEntry.entries.length === 0) {
+                history.splice(dateIndex, 1);
+            }
+        } else {
+            entry.status = prevStatus;
+            entry.timestamp = new Date().toISOString();
         }
-        
+
         Storage.saveHistory(history);
-        return lastAction;
+        return true;
     },
 
     // Export/Import

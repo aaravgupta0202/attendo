@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       '<div class="card-body">' +
         '<div class="card-info">' +
-          '<div class="subject-title">' + subject.name + '</div>' +
+          '<div class="subject-title">' + Utils.escapeHtml(subject.name) + '</div>' +
           '<span class="risk-tag ' + riskInfo.cls + '">' +
             '<i class="fas ' + riskInfo.icon + '"></i> ' + riskInfo.label +
           '</span>' +
@@ -301,6 +301,21 @@ document.addEventListener('DOMContentLoaded', () => {
         markAttendance(subjectId, status);
         setTimeout(() => { card.remove(); refreshStats(); }, 310);
 
+      } else if (tapPossible) {
+        // Barely moved — treat as a tap → cancelled.
+        // (Handled here, not via a 'click' listener: touchstart's
+        // preventDefault() above suppresses the browser's synthetic
+        // click after a touch tap, so click never fires on mobile.)
+        card.style.transition = 'transform 0.48s cubic-bezier(0.16,1,0.3,1), border-color 120ms ease, background 120ms ease';
+        card.style.transform  = '';
+        card.classList.remove('sw-right', 'sw-left');
+
+        markAttendance(subjectId, 'cancelled');
+        updateCardStatus(card, 'cancelled');
+        card.style.animation = 'none';
+        void card.offsetWidth; // force reflow
+        card.style.animation = 'shake 0.35s ease';
+
       } else {
         // Spring back — feels like elastic
         card.style.transition = 'transform 0.48s cubic-bezier(0.16,1,0.3,1), border-color 120ms ease, background 120ms ease';
@@ -311,17 +326,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     card.addEventListener('mousedown',  onStart);
     card.addEventListener('touchstart', onStart, { passive: false });
-
-    // Tap → cancelled
-    card.addEventListener('click', () => {
-      if (!tapPossible) return;
-      markAttendance(subjectId, 'cancelled');
-      updateCardStatus(card, 'cancelled');
-      // Quick shake
-      card.style.animation = 'none';
-      void card.offsetWidth; // force reflow
-      card.style.animation = 'shake 0.35s ease';
-    });
   }
 
   function refreshStats() {
@@ -336,8 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Attendance ──
   function markAttendance(subjectId, status) {
-    if (Storage.markAttendance(Utils.formatDate(), subjectId, status)) {
-      undoStack.push({ subjectId, status, ts: Date.now() });
+    const today  = Utils.formatDate();
+    const result = Storage.markAttendance(today, subjectId, status);
+    if (result.success && result.changed) {
+      undoStack.push({ subjectId, date: today, prevStatus: result.prevStatus });
       updateUndoBtn();
       const msgs  = { attended: 'Marked present', missed: 'Marked absent', cancelled: 'Marked cancelled' };
       const types = { attended: 'success', missed: 'error', cancelled: 'info' };
@@ -368,9 +374,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Actions ──
   function setupActions() {
     undoBtn.addEventListener('click', () => {
-      const action = Storage.undoLastAction();
-      if (action) {
-        undoStack.pop(); updateUndoBtn();
+      const action = undoStack.pop();
+      if (!action) return;
+      updateUndoBtn();
+      if (Storage.revertAttendance(action.date, action.subjectId, action.prevStatus)) {
         loadClasses();
         Utils.showToast('Undo successful', 'success');
       }

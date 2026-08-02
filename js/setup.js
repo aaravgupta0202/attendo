@@ -112,13 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
     subjects.forEach(s => {
       const row = document.createElement('div');
       row.className = 'subject-row';
+      const safeName  = Utils.escapeHtml(s.name);
+      const safeColor = Utils.sanitizeColor(s.color);
       row.innerHTML =
-        '<div class="subject-color-swatch" style="background:' + s.color + '"></div>' +
+        '<div class="subject-color-swatch" style="background:' + safeColor + '"></div>' +
         '<div class="subject-row-info">' +
-          '<div class="subject-row-name">' + s.name + '</div>' +
+          '<div class="subject-row-name">' + safeName + '</div>' +
           '<div class="subject-row-meta">Target: ' + s.target + '%</div>' +
         '</div>' +
-        '<button class="subject-row-del" title="Delete ' + s.name + '">' +
+        '<button class="subject-row-del" title="Delete ' + safeName + '">' +
           '<i class="fas fa-trash-alt"></i>' +
         '</button>';
 
@@ -158,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
       pill.dataset.id = s.id;
       pill.draggable = true;
       pill.innerHTML =
-        '<span class="pool-dot" style="background:' + s.color + '"></span>' + s.name;
+        '<span class="pool-dot" style="background:' + Utils.sanitizeColor(s.color) + '"></span>' + Utils.escapeHtml(s.name);
 
       // Desktop drag
       pill.addEventListener('dragstart', e => {
@@ -204,9 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Chips HTML
       const chipsHtml = assigned.map(s =>
-        '<div class="day-chip" style="background:' + s.color + '">' +
-          s.name +
-          '<button class="chip-del" data-id="' + s.id + '" data-day="' + day.key + '" aria-label="Remove">' +
+        '<div class="day-chip" style="background:' + Utils.sanitizeColor(s.color) + '">' +
+          Utils.escapeHtml(s.name) +
+          '<button class="chip-del" data-id="' + Utils.escapeHtml(s.id) + '" data-day="' + day.key + '" aria-label="Remove">' +
             '<i class="fas fa-times"></i>' +
           '</button>' +
         '</div>'
@@ -293,25 +295,57 @@ document.addEventListener('DOMContentLoaded', () => {
     subjects.forEach(s => {
       const card = document.createElement('div');
       card.className = 'target-card';
+      const safeId    = Utils.escapeHtml(s.id);
+      const safeName  = Utils.escapeHtml(s.name);
+      const safeColor = Utils.sanitizeColor(s.color);
       card.innerHTML =
         '<div class="target-card-head">' +
           '<div class="target-card-name">' +
-            '<span class="target-card-name-dot" style="background:' + s.color + '"></span>' +
-            s.name +
+            '<span class="target-card-name-dot" style="background:' + safeColor + '"></span>' +
+            safeName +
           '</div>' +
-          '<div class="target-pct" id="tpct_' + s.id + '">' + s.target + '%</div>' +
+          '<div class="target-pct" id="tpct_' + safeId + '">' + s.target + '%</div>' +
         '</div>' +
         '<input type="range" class="target-slider"' +
           ' min="50" max="100" step="5"' +
           ' value="' + s.target + '"' +
-          ' data-id="' + s.id + '">' +
-        '<div class="target-hint" id="thint_' + s.id + '">' + hintHTML(s.target) + '</div>';
+          ' data-id="' + safeId + '">' +
+        '<div class="target-hint" id="thint_' + safeId + '">' + hintHTML(s.target) + '</div>' +
+        '<div class="baseline-row">' +
+          '<div class="baseline-label"><i class="fas fa-clock-rotate-left"></i> So far</div>' +
+          '<div class="baseline-fields">' +
+            '<div class="baseline-field">' +
+              '<input type="number" min="0" step="1" inputmode="numeric"' +
+                ' class="baseline-total" data-id="' + safeId + '" value="' + s.total + '">' +
+              '<span>Held</span>' +
+            '</div>' +
+            '<div class="baseline-field">' +
+              '<input type="number" min="0" step="1" inputmode="numeric"' +
+                ' class="baseline-attended" data-id="' + safeId + '" value="' + s.attended + '">' +
+              '<span>Attended</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
 
       card.querySelector('.target-slider').addEventListener('input', e => {
         const v = parseInt(e.target.value);
         document.getElementById('tpct_' + s.id).textContent  = v + '%';
         document.getElementById('thint_' + s.id).innerHTML    = hintHTML(v);
       });
+
+      const totalInput    = card.querySelector('.baseline-total');
+      const attendedInput = card.querySelector('.baseline-attended');
+      const validateBaseline = () => {
+        const held = Math.max(0, parseInt(totalInput.value) || 0);
+        const att  = Math.max(0, parseInt(attendedInput.value) || 0);
+        const overAttended = att > held;
+        attendedInput.closest('.baseline-field').classList.toggle('error', overAttended);
+        if (overAttended) {
+          Utils.showToast('Attended can\'t be more than classes held', 'warning');
+        }
+      };
+      totalInput.addEventListener('input', validateBaseline);
+      attendedInput.addEventListener('input', validateBaseline);
 
       list.appendChild(card);
     });
@@ -325,7 +359,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function saveTargets() {
     document.querySelectorAll('.target-slider').forEach(slider => {
-      Storage.updateSubject(slider.dataset.id, { target: parseInt(slider.value) });
+      const id      = slider.dataset.id;
+      const totalEl = document.querySelector('.baseline-total[data-id="' + id + '"]');
+      const attEl   = document.querySelector('.baseline-attended[data-id="' + id + '"]');
+
+      const updates = { target: parseInt(slider.value) };
+
+      if (totalEl && attEl) {
+        const held = Math.max(0, parseInt(totalEl.value) || 0);
+        const att  = Math.min(held, Math.max(0, parseInt(attEl.value) || 0));
+        updates.total    = held;
+        updates.attended = att;
+      }
+
+      Storage.updateSubject(id, updates);
     });
     Utils.showToast('Setup saved!', 'success');
     document.getElementById('targetsList').style.display = 'none';

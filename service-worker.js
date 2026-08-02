@@ -1,8 +1,11 @@
 // ─────────────────────────────────────────────────────────────
-// Attendo Service Worker  ·  cache-first, full offline support
-// Bump CACHE_VER to force all clients to pick up a new build.
+// Attendo Service Worker
+// App shell (HTML/CSS/JS) is network-first so a Netlify deploy
+// shows up on next load — cache is only a fallback for offline.
+// Truly static assets (icons, fonts, CDN libs) stay cache-first.
+// Bump CACHE_VER only if you need to force-evict old caches.
 // ─────────────────────────────────────────────────────────────
-const CACHE_VER = 'v3';
+const CACHE_VER = 'v4';
 const SHELL     = 'attendo-shell-' + CACHE_VER;
 const EXT       = 'attendo-ext-'   + CACHE_VER;
 
@@ -21,6 +24,11 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png'
 ];
+
+// Requests matching these get network-first treatment (app shell —
+// changes on every deploy). Everything else same-origin (icons, etc.)
+// is cache-first since it almost never changes.
+const NETWORK_FIRST_EXT = /\.(?:html|js|css|json)$/;
 
 const EXT_HOSTS = [
   'fonts.googleapis.com',
@@ -66,17 +74,40 @@ self.addEventListener('fetch', event => {
   if (!url.protocol.startsWith('http')) return;
 
   if (EXT_HOSTS.some(h => url.hostname.includes(h))) {
-    event.respondWith(fromCacheOrNetwork(req, EXT));
+    event.respondWith(cacheFirst(req, EXT));
     return;
   }
 
   if (url.origin === self.location.origin) {
-    event.respondWith(fromCacheOrNetwork(req, SHELL));
+    const isShellAsset = req.mode === 'navigate' || NETWORK_FIRST_EXT.test(url.pathname);
+    event.respondWith(isShellAsset ? networkFirst(req, SHELL) : cacheFirst(req, SHELL));
     return;
   }
 });
 
-async function fromCacheOrNetwork(req, cacheName) {
+// Always try the network first so deploys show up immediately;
+// fall back to cache when offline (and to index.html for navigations).
+async function networkFirst(req, cacheName) {
+  try {
+    const res = await fetch(req);
+    if (res.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(req, res.clone());
+    }
+    return res;
+  } catch {
+    const cached = await caches.match(req);
+    if (cached) return cached;
+    if (req.mode === 'navigate') {
+      const fallback = await caches.match('./index.html');
+      if (fallback) return fallback;
+    }
+    return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+  }
+}
+
+// Serve from cache when available; otherwise fetch and cache for next time.
+async function cacheFirst(req, cacheName) {
   const cached = await caches.match(req);
   if (cached) return cached;
 
@@ -88,11 +119,6 @@ async function fromCacheOrNetwork(req, cacheName) {
     }
     return res;
   } catch {
-    // Offline fallback: serve index.html for navigation requests
-    if (req.mode === 'navigate') {
-      const fallback = await caches.match('./index.html');
-      if (fallback) return fallback;
-    }
     return new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
   }
 }

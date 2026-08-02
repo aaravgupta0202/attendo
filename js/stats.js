@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
       card.className = `subj-card risk-${s.risk}`;
       card.innerHTML = `
         <div class="subj-head">
-          <span class="subj-name">${s.name}</span>
+          <span class="subj-name">${Utils.escapeHtml(s.name)}</span>
           <span class="badge ${badgeClass}">${badgeLabel}</span>
         </div>
         <div class="subj-stats">
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="subj-stat-lbl">Target</div>
           </div>
           <div class="subj-stat-box">
-            <div class="subj-stat-val" style="color:var(--rose-d)">${s.needed > 0 ? s.needed : '–'}</div>
+            <div class="subj-stat-val" style="color:var(--rose-d)">${s.needed > 0 ? (Number.isFinite(s.needed) ? s.needed : '—') : '–'}</div>
             <div class="subj-stat-lbl">Need</div>
           </div>
           <div class="subj-stat-box">
@@ -340,7 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
       stats.atRisk.forEach(s => {
         const row = document.createElement('div');
         row.className = 'insight-row';
-        row.innerHTML = `<span class="insight-subj">${s.name}</span><span class="insight-val">${s.pct}% (${s.needed} needed)</span>`;
+        const neededLabel = Number.isFinite(s.needed) ? `${s.needed} needed` : 'target unreachable';
+        row.innerHTML = `<span class="insight-subj">${Utils.escapeHtml(s.name)}</span><span class="insight-val">${s.pct}% (${neededLabel})</span>`;
         atRiskList.appendChild(row);
       });
     }
@@ -353,7 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
       stats.safeTo.forEach(s => {
         const row = document.createElement('div');
         row.className = 'insight-row';
-        row.innerHTML = `<span class="insight-subj">${s.name}</span><span class="insight-val">${s.safe} class${s.safe !== 1 ? 'es' : ''}</span>`;
+        row.innerHTML = `<span class="insight-subj">${Utils.escapeHtml(s.name)}</span><span class="insight-val">${s.safe} class${s.safe !== 1 ? 'es' : ''}</span>`;
         safeList.appendChild(row);
       });
     }
