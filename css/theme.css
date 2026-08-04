@@ -488,6 +488,7 @@ body::before {
 
 /* ── Site credit ── */
 .site-credit {
+  display: block;
   text-align: center;
   font-size: 0.72rem;
   font-weight: 600;
