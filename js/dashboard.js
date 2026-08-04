@@ -82,7 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const subjectIds   = Storage.getSubjectsForDay(dayName);
     const subjects     = Storage.getSubjects();
     const todayHistory = Storage.getHistoryForDate(Utils.formatDate(today));
-    const todaySubs    = subjects.filter(s => subjectIds.includes(s.id));
+    
+    // Include extra classes added for today
+    const historySubjectIds = todayHistory.entries.map(e => e.subjectId);
+    const allSubjectIds = [...new Set([...subjectIds, ...historySubjectIds])];
+    
+    const todaySubs = subjects.filter(s => allSubjectIds.includes(s.id));
 
     const attended = todayHistory.entries.filter(e => e.status === 'attended').length;
     const missed   = todayHistory.entries.filter(e => e.status === 'missed').length;
@@ -436,6 +441,53 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => location.reload(), 900);
       }
       closeMenu();
+    });
+
+    // ── Extra Class Modal Logic ──
+    const extraClassModal = document.getElementById('extraClassModal');
+    const extraClassOverlay = document.getElementById('extraClassOverlay');
+    const extraClassSelect = document.getElementById('extraClassSelect');
+    const openModalBtn = document.getElementById('addExtraClassBtn');
+    const closeModalBtn = document.getElementById('extraClassClose');
+    const confirmClassBtn = document.getElementById('extraClassConfirmBtn');
+
+    function openExtraClassModal() {
+      // Populate select
+      extraClassSelect.innerHTML = '<option value="" disabled selected>Select subject...</option>';
+      Storage.getSubjects().forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        extraClassSelect.appendChild(opt);
+      });
+      extraClassModal.classList.remove('hidden');
+      extraClassOverlay.classList.add('active');
+      // small delay to allow display:block before adding active class for transition
+      requestAnimationFrame(() => extraClassModal.classList.add('active'));
+    }
+
+    function closeExtraClassModal() {
+      extraClassModal.classList.remove('active');
+      extraClassOverlay.classList.remove('active');
+      setTimeout(() => extraClassModal.classList.add('hidden'), 300);
+    }
+
+    openModalBtn.addEventListener('click', openExtraClassModal);
+    closeModalBtn.addEventListener('click', closeExtraClassModal);
+    extraClassOverlay.addEventListener('click', closeExtraClassModal);
+
+    confirmClassBtn.addEventListener('click', () => {
+      const subjectId = extraClassSelect.value;
+      if (!subjectId) {
+        Utils.showToast('Please select a subject', 'warning');
+        return;
+      }
+      const today = Utils.formatDate(new Date());
+      // Mark as pending to create the history entry without affecting stats
+      Storage.markAttendance(today, subjectId, 'pending');
+      closeExtraClassModal();
+      loadClasses();
+      Utils.showToast('Extra class added!', 'success');
     });
   }
 

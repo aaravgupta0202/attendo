@@ -130,9 +130,32 @@ const Storage = {
     },
 
     deleteSubject: (id) => {
+        // 1. Remove from subjects
         const subjects = Storage.getSubjects();
         const filtered = subjects.filter(s => s.id !== id);
-        return Storage.saveSubjects(filtered);
+        Storage.saveSubjects(filtered);
+
+        // 2. Remove from timetable
+        const tt = Storage.getTimetable();
+        Object.keys(tt).forEach(day => {
+            if (Array.isArray(tt[day])) {
+                tt[day] = tt[day].filter(sId => sId !== id);
+            }
+        });
+        Storage.saveTimetable(tt);
+
+        // 3. Remove from history
+        let history = Storage.getHistory();
+        history.forEach(dateEntry => {
+            if (Array.isArray(dateEntry.entries)) {
+                dateEntry.entries = dateEntry.entries.filter(e => e.subjectId !== id);
+            }
+        });
+        // Remove empty date entries
+        history = history.filter(dateEntry => dateEntry.entries && dateEntry.entries.length > 0);
+        Storage.saveHistory(history);
+
+        return true;
     },
 
     // Timetable

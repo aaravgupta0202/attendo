@@ -415,9 +415,14 @@
           <div class="day-pill" id="dayPill">–</div>
           <span class="schedule-count" id="scheduleCount"></span>
         </div>
-        <button class="mark-all-btn" id="markAllBtn">
-          <i class="fas fa-check-double"></i> Mark All
-        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="mark-all-btn" id="addExtraClassBtn" style="background: var(--surface); color: var(--brand); border: 1px solid var(--border-md);">
+            <i class="fas fa-plus"></i> Extra
+          </button>
+          <button class="mark-all-btn" id="markAllBtn">
+            <i class="fas fa-check-double"></i> Mark All
+          </button>
+        </div>
       </div>
 
       <div id="classesContainer"></div>
@@ -502,9 +507,9 @@
       <button class="menu-link danger" id="menuReset"><i class="fas fa-trash-alt"></i> Reset All</button>
     
       <div class="menu-divider"></div>
-      <div class="menu-credit">
+      <a href="https://aarav-cc.netlify.app/" target="_blank" rel="noopener" class="menu-credit" style="display:block; text-align:center;">
         <i class="fas fa-code"></i> Made by Aarav
-      </div>
+      </a>
     </nav>
   </div>
   <div class="menu-overlay" id="menuOverlay"></div>
@@ -512,6 +517,24 @@
   <!-- Toast + file input -->
   <div class="toast-container" id="toastContainer"></div>
   <input type="file" id="importInput" accept=".json" style="display:none">
+
+  <!-- Extra Class Modal -->
+  <div class="menu-overlay" id="extraClassOverlay"></div>
+  <div class="extra-class-modal hidden" id="extraClassModal">
+    <div class="modal-head">
+      <h3>Add Extra Class</h3>
+      <button class="modal-close" id="extraClassClose"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <p>Select a subject to add it as an extra class for today. This won't change your weekly timetable.</p>
+      <select id="extraClassSelect" class="extra-class-select">
+        <option value="" disabled selected>Select subject...</option>
+      </select>
+      <button class="btn btn-emerald" id="extraClassConfirmBtn" style="width: 100%; justify-content: center; margin-top: 16px;">
+        <i class="fas fa-plus"></i> Add Class
+      </button>
+    </div>
+  </div>
 
   
 

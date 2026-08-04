@@ -209,12 +209,6 @@ document.addEventListener('DOMContentLoaded', () => {
       row.querySelector('.subject-row-del').addEventListener('click', () => {
         if (!confirm('Delete "' + s.name + '"?')) return;
         Storage.deleteSubject(s.id);
-        // Remove from timetable too
-        const tt = Storage.getTimetable();
-        DAYS.forEach(d => {
-          if (tt[d.key]) tt[d.key] = tt[d.key].filter(id => id !== s.id);
-        });
-        Storage.saveTimetable(tt);
         renderSubjects();
         Utils.showToast(s.name + ' removed', 'info');
       });
