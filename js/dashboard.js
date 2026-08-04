@@ -152,6 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const card = document.createElement('div');
     card.className = 'class-card';
     card.dataset.subjectId = subject.id;
+    card.classList.add('marked-' + status);
     card.style.setProperty('--card-color', subject.color || '#4f46e5');
 
     // SVG ring: viewBox="0 0 60 60", cx=cy=30, r=RING_R
@@ -298,13 +299,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const dir    = dx > 0 ? 1 : -1;
         const status = dir > 0 ? 'attended' : 'missed';
 
-        // Fly out with spring-y exit
-        card.style.transition = 'transform 0.3s cubic-bezier(0.4,0,0.6,1), opacity 0.25s ease';
-        card.style.transform  = 'translateX(' + (dir * 115) + 'vw) rotate(' + (dir * 16) + 'deg)';
-        card.style.opacity    = '0';
-
         markAttendance(subjectId, status);
-        setTimeout(() => { card.remove(); refreshStats(); }, 310);
+        updateCardStatus(card, status);
+        refreshStats();
+
+        // Snap back and color code instead of removing
+        card.style.transition = 'transform 0.48s cubic-bezier(0.16,1,0.3,1), border-color 120ms ease, background 120ms ease';
+        card.style.transform  = '';
+        card.classList.remove('sw-right', 'sw-left');
+        card.classList.remove('marked-attended', 'marked-missed', 'marked-cancelled', 'marked-pending');
+        card.classList.add('marked-' + status);
 
       } else if (tapPossible) {
         // Barely moved — treat as a tap → cancelled.
@@ -317,6 +321,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         markAttendance(subjectId, 'cancelled');
         updateCardStatus(card, 'cancelled');
+        card.classList.remove('marked-attended', 'marked-missed', 'marked-cancelled', 'marked-pending');
+        card.classList.add('marked-cancelled');
+        refreshStats();
         card.style.animation = 'none';
         void card.offsetWidth; // force reflow
         card.style.animation = 'shake 0.35s ease';
@@ -446,19 +453,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Extra Class Modal Logic ──
     const extraClassModal = document.getElementById('extraClassModal');
     const extraClassOverlay = document.getElementById('extraClassOverlay');
+    const extraClassList = document.getElementById('extraClassList');
     const extraClassSelect = document.getElementById('extraClassSelect');
     const openModalBtn = document.getElementById('addExtraClassBtn');
     const closeModalBtn = document.getElementById('extraClassClose');
     const confirmClassBtn = document.getElementById('extraClassConfirmBtn');
 
     function openExtraClassModal() {
-      // Populate select
-      extraClassSelect.innerHTML = '<option value="" disabled selected>Select subject...</option>';
+      // Populate custom list
+      extraClassList.innerHTML = '';
+      extraClassSelect.value = '';
+      
       Storage.getSubjects().forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name;
-        extraClassSelect.appendChild(opt);
+        const item = document.createElement('div');
+        item.className = 'custom-selector-item';
+        item.textContent = s.name;
+        item.dataset.value = s.id;
+        item.addEventListener('click', () => {
+          extraClassList.querySelectorAll('.custom-selector-item').forEach(el => el.classList.remove('selected'));
+          item.classList.add('selected');
+          extraClassSelect.value = s.id;
+        });
+        extraClassList.appendChild(item);
       });
       extraClassModal.classList.remove('hidden');
       extraClassOverlay.classList.add('active');

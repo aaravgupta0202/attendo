@@ -163,7 +163,21 @@
       background: rgba(244,63,94,0.05);
       border-color: rgba(244,63,94,0.35);
     }
-
+    
+    /* Color coding for marked states */
+    .class-card.marked-attended {
+      border-color: rgba(16,185,129,0.3);
+      background: rgba(16,185,129,0.03);
+    }
+    .class-card.marked-missed {
+      border-color: rgba(244,63,94,0.3);
+      background: rgba(244,63,94,0.03);
+    }
+    .class-card.marked-cancelled {
+      border-color: rgba(148,163,184,0.3);
+      background: rgba(148,163,184,0.03);
+    }
+    
     /* Action badges that slide in as you swipe */
     .swipe-badge {
       position: absolute; top: 50%;
@@ -245,6 +259,37 @@
       line-height: 1;
       letter-spacing: -0.02em;
       pointer-events: none;
+    }
+    
+    /* Custom In-Built Selector for Extra Classes */
+    .custom-selector-list {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface-2);
+      margin: 12px 0;
+    }
+    .custom-selector-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--ink-light);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: all 0.15s ease;
+    }
+    .custom-selector-item:last-child { border-bottom: none; }
+    .custom-selector-item:hover { background: rgba(255,255,255,0.05); }
+    .custom-selector-item.selected {
+      background: rgba(79,70,229,0.15);
+      color: var(--brand);
+    }
+    .custom-selector-item.selected::after {
+      content: '\f058'; /* fa-circle-check */
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
     }
 
     /* Progress bar */
@@ -328,11 +373,11 @@
       text-transform: uppercase; letter-spacing: 0.07em;
       margin-bottom: 9px; display: flex; align-items: center; gap: 5px;
     }
-    .guide-row { display: flex; gap: 6px; }
+    .guide-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .guide-item {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      gap: 5px; padding: 7px 4px; border-radius: 8px;
-      font-size: 0.71rem; font-weight: 600;
+      flex: 1 1 30%; display: flex; align-items: center; justify-content: center;
+      gap: 5px; padding: 7px 6px; border-radius: 8px;
+      font-size: 0.71rem; font-weight: 600; white-space: nowrap; min-width: 120px;
     }
     .guide-item.right  { background: rgba(16,185,129,0.08); color: var(--emerald-d); }
     .guide-item.left   { background: rgba(244,63,94,0.07);  color: var(--rose-d); }
@@ -529,9 +574,8 @@
     </div>
     <div class="modal-body">
       <p>Select a subject to add it as an extra class for today. This won't change your weekly timetable.</p>
-      <select id="extraClassSelect" class="extra-class-select">
-        <option value="" disabled selected>Select subject...</option>
-      </select>
+      <div id="extraClassList" class="custom-selector-list"></div>
+      <input type="hidden" id="extraClassSelect" value="">
       <button class="btn btn-emerald" id="extraClassConfirmBtn" style="width: 100%; justify-content: center; margin-top: 16px;">
         <i class="fas fa-plus"></i> Add Class
       </button>
