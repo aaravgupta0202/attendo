@@ -185,7 +185,10 @@ const Utils = {
                 total += localStorage[key].length * 2;
             }
         }
-        const percentage = (total / (5 * 1024 * 1024)) * 100; // 5MB limit
+        let percentage = (total / (5 * 1024 * 1024)) * 100; // 5MB limit
+        if (total > 0 && percentage < 2) {
+            percentage = 2; // ensure it is visibly filled at least a bit
+        }
         return {
             used: total,
             percentage: Math.min(100, Math.round(percentage)),

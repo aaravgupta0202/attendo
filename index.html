@@ -102,23 +102,25 @@
        SCHEDULE HEADER
     ═══════════════════════════════════════════ */
     .schedule-head {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 15px; padding: 0 5px; gap: 8px; flex-wrap: wrap;
     }
-    .schedule-left { display: flex; align-items: center; gap: 8px; }
+    .schedule-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 140px; }
     .day-pill {
       background: var(--brand); color: white;
-      border-radius: 99px; padding: 4px 12px;
+      border-radius: 99px; padding: 4px 10px;
       font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em;
+      white-space: nowrap;
     }
-    .schedule-count { font-size: 0.8rem; color: var(--slate); font-weight: 500; }
+    .schedule-count { font-size: 0.75rem; color: var(--slate); font-weight: 500; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
     .mark-all-btn {
       display: flex; align-items: center; gap: 5px;
       background: var(--surface-2); border: 1px solid var(--border-md);
-      border-radius: 99px; padding: 5px 13px;
-      font-size: 0.76rem; font-weight: 700; color: var(--ink-light);
+      border-radius: 99px; padding: 6px 12px;
+      font-size: 0.75rem; font-weight: 700; color: var(--ink-light);
       cursor: pointer; transition: all 0.18s ease;
+      white-space: nowrap; flex-shrink: 0;
     }
     .mark-all-btn:hover { background: var(--brand); color: white; border-color: var(--brand); }
 
@@ -479,11 +481,13 @@
   <!-- ── Side Menu ── -->
   <div class="side-menu" id="sideMenu">
     <div class="menu-top">
-      <div class="menu-logo">
-        <div class="menu-logo-icon"><i class="fas fa-graduation-cap"></i></div>
-        <h2>Attendo</h2>
+      <div class="menu-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="menu-logo" style="margin-bottom: 0;">
+          <div class="menu-logo-icon"><i class="fas fa-graduation-cap"></i></div>
+          <h2>Attendo</h2>
+        </div>
+        <button class="menu-close" id="menuClose" style="position: static; margin-top: 0;"><i class="fas fa-times"></i></button>
       </div>
-      <button class="menu-close" id="menuClose"><i class="fas fa-times"></i></button>
       <div class="menu-storage">
         <div class="menu-storage-label">Storage</div>
         <div class="menu-storage-bar">
@@ -500,7 +504,7 @@
       <button class="menu-link" id="menuExport"><i class="fas fa-download"></i> Export Data</button>
       <button class="menu-link" id="menuImport"><i class="fas fa-upload"></i> Import Data</button>
             <div class="menu-divider"></div>
-      <button class="menu-link install-link" id="menuInstall" onclick="attendoInstall()"><i class="fas fa-download"></i> Install App</button>
+      <button class="menu-link install-link" id="menuInstall" onclick="window._pwaInstall()"><i class="fas fa-download"></i> Install App</button>
       <div class="menu-divider"></div>
       <button class="menu-link danger" id="menuReset"><i class="fas fa-trash-alt"></i> Reset All</button>
     
