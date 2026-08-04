@@ -73,6 +73,88 @@ document.addEventListener('DOMContentLoaded', () => {
     addBtn.addEventListener('click', addSubject);
     input.addEventListener('keydown', e => { if (e.key === 'Enter') addSubject(); });
     document.getElementById('toStep2').addEventListener('click', () => goTo(2));
+
+    // ── AI Auto-fill ──
+    const aiToggle = document.getElementById('aiToggle');
+    const aiContent = document.getElementById('aiContent');
+    const aiToggleIcon = document.getElementById('aiToggleIcon');
+    
+    aiToggle.addEventListener('click', () => {
+      aiContent.classList.toggle('active');
+      aiToggleIcon.className = aiContent.classList.contains('active') ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+    });
+
+    document.getElementById('aiCopyBtn').addEventListener('click', () => {
+      const templateText = document.getElementById('aiTemplate').textContent;
+      navigator.clipboard.writeText(templateText).then(() => {
+        Utils.showToast('Template copied!', 'success');
+      }).catch(() => {
+        Utils.showToast('Failed to copy', 'warning');
+      });
+    });
+
+    document.getElementById('aiApplyBtn').addEventListener('click', () => {
+      const jsonStr = document.getElementById('aiInput').value.trim();
+      if (!jsonStr) {
+        Utils.showToast('Please paste the JSON first.', 'warning');
+        return;
+      }
+      try {
+        const data = JSON.parse(jsonStr);
+        if (!data.subjects || !Array.isArray(data.subjects) || !data.timetable) {
+          throw new Error('Invalid format');
+        }
+
+        // Clear existing data
+        localStorage.setItem(Storage.KEYS.SUBJECTS, JSON.stringify([]));
+        localStorage.setItem(Storage.KEYS.TIMETABLE, JSON.stringify({
+          sunday: [], monday: [], tuesday: [], wednesday: [],
+          thursday: [], friday: [], saturday: []
+        }));
+
+        // Add subjects
+        const subjectIdMap = {};
+        data.subjects.forEach((name, i) => {
+           if (typeof name !== 'string' || !name.trim()) return;
+           const color = COLORS[i % COLORS.length];
+           Storage.addSubject({ name, target: 75, color });
+        });
+        
+        // Map names to generated IDs
+        const newSubjects = Storage.getSubjects();
+        newSubjects.forEach(s => {
+           subjectIdMap[s.name.toLowerCase()] = s.id;
+        });
+
+        // Build Timetable
+        const tt = Storage.getTimetable();
+        Object.keys(data.timetable).forEach(day => {
+           const d = day.toLowerCase();
+           if (tt[d] !== undefined && Array.isArray(data.timetable[day])) {
+              data.timetable[day].forEach(subj => {
+                 if (typeof subj !== 'string') return;
+                 const id = subjectIdMap[subj.toLowerCase()];
+                 if (id && !tt[d].includes(id)) {
+                    tt[d].push(id);
+                 }
+              });
+           }
+        });
+        Storage.saveTimetable(tt);
+
+        renderSubjects();
+        Utils.showToast('Timetable applied successfully!', 'success');
+        
+        // Clean up UI and jump to Step 3
+        document.getElementById('aiInput').value = '';
+        aiContent.classList.remove('active');
+        aiToggleIcon.className = 'fas fa-chevron-down';
+        goTo(3);
+      } catch (e) {
+        console.error('AI JSON Error:', e);
+        Utils.showToast('Invalid JSON. Ensure it matches the exact format.', 'rose');
+      }
+    });
   }
 
   function addSubject() {

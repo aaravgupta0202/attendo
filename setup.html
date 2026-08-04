@@ -115,6 +115,86 @@
     }
 
     /* ═══════════════════════════════════════════
+       AI AUTO-FILL
+    ═══════════════════════════════════════════ */
+    .ai-autofill-box {
+      background: rgba(79, 70, 229, 0.05);
+      border: 1px solid rgba(79, 70, 229, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .ai-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .ai-header h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ai-header i { font-size: 1.1rem; }
+    .ai-content {
+      margin-top: 14px;
+      display: none;
+      animation: fade-up 0.3s ease both;
+    }
+    .ai-content.active { display: block; }
+    .ai-instruction {
+      font-size: 0.85rem;
+      color: var(--slate);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    .ai-code-wrap {
+      position: relative;
+      background: var(--surface-2);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: var(--ink);
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      color: var(--slate);
+      transition: all 0.2s;
+    }
+    .copy-btn:hover { background: var(--brand); color: white; border-color: var(--brand); }
+    .ai-textarea {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      border: 1.5px solid var(--border-md);
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: var(--ink);
+      background: var(--surface);
+      margin-bottom: 12px;
+      resize: vertical;
+    }
+    .ai-textarea:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+    }
+
+    /* ═══════════════════════════════════════════
        STEP 1 — SUBJECTS
     ═══════════════════════════════════════════ */
     .add-subject-row {
@@ -531,6 +611,38 @@
 
     <!-- ── Step 1: Subjects ── -->
     <div class="step-panel active animate-up d1" id="step1">
+
+      <div class="ai-autofill-box">
+        <div class="ai-header" id="aiToggle">
+          <h3><i class="fas fa-wand-magic-sparkles"></i> AI Auto-fill</h3>
+          <i class="fas fa-chevron-down" id="aiToggleIcon"></i>
+        </div>
+        <div class="ai-content" id="aiContent">
+          <p class="ai-instruction">
+            <strong>1.</strong> Ask an AI (ChatGPT, Claude, etc.): <em>"Extract my schedule from the attached image/PDF and fill this JSON template exactly. Reply with only the JSON."</em><br>
+            <strong>2.</strong> Copy the template below and paste it into the AI along with your timetable image.
+          </p>
+          <div class="ai-code-wrap">
+            <button class="copy-btn" id="aiCopyBtn"><i class="fas fa-copy"></i> Copy</button>
+<pre id="aiTemplate">{
+  "subjects": ["Mathematics", "Physics", "Chemistry"],
+  "timetable": {
+    "monday": ["Mathematics", "Physics"],
+    "tuesday": ["Chemistry"],
+    "wednesday": [],
+    "thursday": [],
+    "friday": [],
+    "saturday": [],
+    "sunday": []
+  }
+}</pre>
+          </div>
+          <textarea class="ai-textarea" id="aiInput" placeholder="Paste the AI-generated JSON here..."></textarea>
+          <button class="btn btn-emerald" id="aiApplyBtn" style="width:100%; justify-content:center;">
+            <i class="fas fa-check"></i> Apply & Skip to Targets
+          </button>
+        </div>
+      </div>
 
       <div class="step-section-title">
         <i class="fas fa-book"></i> Your Subjects
