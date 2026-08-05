@@ -480,7 +480,7 @@ body::before {
   left: -295px;
   width: 285px;
   height: 100%;
-  background: var(--ink);
+  background: #0f172a;
   color: white;
   z-index: 400;
   transition: left 0.34s cubic-bezier(0.16, 1, 0.3, 1);
