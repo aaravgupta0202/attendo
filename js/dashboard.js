@@ -266,8 +266,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (Math.abs(dx) > 6) tapPossible = false;
 
-      // Apply transform — natural feel with slight damping at extremes
-      const travel = dx * 0.44;
+      // Apply transform — follow finger exactly with subtle tilt
+      const travel = dx;
       const rot    = dx * 0.025; // subtle tilt
       card.style.transform = 'translateX(' + travel + 'px) rotate(' + rot + 'deg)';
 

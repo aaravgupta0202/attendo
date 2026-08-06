@@ -411,8 +411,9 @@ body::before {
 }
 
 .toast {
-  background: var(--ink-mid);
-  color: white;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 13px;
   display: flex;
